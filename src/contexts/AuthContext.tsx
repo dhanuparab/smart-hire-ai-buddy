@@ -70,16 +70,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const loginWithGoogle = async () => {
     setIsLoading(true);
     try {
-      // Simulate Google OAuth
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const user = {
-        id: '2',
+      // Simulate proper Google OAuth validation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // In a real implementation, you would:
+      // 1. Redirect to Google OAuth
+      // 2. Handle the callback
+      // 3. Validate the token
+      // 4. Extract user information
+      
+      // For demo purposes, we'll simulate a successful Google login
+      const mockGoogleUser = {
+        id: Date.now().toString(),
         email: 'user@gmail.com',
         name: 'Google User',
         avatar: '/placeholder.svg'
       };
-      setUser(user);
-      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Simulate validation check
+      if (mockGoogleUser.email) {
+        setUser(mockGoogleUser);
+        localStorage.setItem('user', JSON.stringify(mockGoogleUser));
+      } else {
+        throw new Error('Google authentication failed');
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw new Error('Google authentication failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +106,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulate email validation
+      if (!email.includes('@')) {
+        throw new Error('Invalid email format');
+      }
+      
+      // Simulate password validation
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters');
+      }
+      
       const user = {
         id: Date.now().toString(),
         email,

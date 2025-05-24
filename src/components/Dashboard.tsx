@@ -1,17 +1,23 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Clock, Star, TrendingUp, Users, Briefcase, Calendar, MessageSquare } from "lucide-react";
+import { CandidateProfile } from "@/components/CandidateProfile";
+import { Bell, Clock, Star, TrendingUp, Users, Briefcase, Calendar, MessageSquare, Eye, Edit, Trash2, Send } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export const Dashboard = () => {
+  const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
+  const { toast } = useToast();
+
   const recentCandidates = [
-    { name: "Sarah Chen", role: "Senior Frontend Developer", match: 95, status: "Interview Scheduled", avatar: "/placeholder.svg" },
-    { name: "Marcus Johnson", role: "Data Scientist", match: 92, status: "Under Review", avatar: "/placeholder.svg" },
-    { name: "Emily Rodriguez", role: "UX Designer", match: 88, status: "Phone Screen", avatar: "/placeholder.svg" },
-    { name: "David Park", role: "Backend Engineer", match: 85, status: "Application Received", avatar: "/placeholder.svg" },
+    { id: "1", name: "Sarah Chen", role: "Senior Frontend Developer", match: 95, status: "Interview Scheduled", avatar: "/placeholder.svg" },
+    { id: "2", name: "Marcus Johnson", role: "Data Scientist", match: 92, status: "Under Review", avatar: "/placeholder.svg" },
+    { id: "3", name: "Emily Rodriguez", role: "UX Designer", match: 88, status: "Phone Screen", avatar: "/placeholder.svg" },
+    { id: "4", name: "David Park", role: "Backend Engineer", match: 85, status: "Application Received", avatar: "/placeholder.svg" },
   ];
 
   const upcomingInterviews = [
@@ -25,6 +31,48 @@ export const Dashboard = () => {
     { message: "Interview reminder: Sarah Chen in 30 minutes", time: "30 min ago", type: "reminder" },
     { message: "AI analysis completed for Data Scientist role", time: "1 hour ago", type: "analysis" },
   ];
+
+  const handleViewProfile = (candidateId: string) => {
+    setSelectedCandidate(candidateId);
+  };
+
+  const handleEditCandidate = (candidateId: string) => {
+    toast({
+      title: "Edit Candidate",
+      description: `Edit functionality for candidate ${candidateId}`,
+    });
+  };
+
+  const handleDeleteCandidate = (candidateId: string) => {
+    toast({
+      title: "Delete Candidate", 
+      description: `Delete functionality for candidate ${candidateId}`,
+      variant: "destructive",
+    });
+  };
+
+  const handlePublishCandidate = (candidateId: string) => {
+    toast({
+      title: "Candidate Published",
+      description: `Candidate ${candidateId} has been published to job boards`,
+    });
+  };
+
+  const handleQuickAction = (action: string) => {
+    toast({
+      title: `${action} Action`,
+      description: `${action} functionality triggered`,
+    });
+  };
+
+  if (selectedCandidate) {
+    return (
+      <CandidateProfile 
+        candidateId={selectedCandidate} 
+        onBack={() => setSelectedCandidate(null)} 
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -64,7 +112,24 @@ export const Dashboard = () => {
                     <Progress value={candidate.match} className="w-20 mt-1" />
                   </div>
                   <Badge variant="outline">{candidate.status}</Badge>
-                  <Button size="sm">View Profile</Button>
+                  <div className="flex space-x-1">
+                    <Button size="sm" variant="outline" onClick={() => handleViewProfile(candidate.id)}>
+                      <Eye className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleEditCandidate(candidate.id)}>
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleDeleteCandidate(candidate.id)}>
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
+                    </Button>
+                    <Button size="sm" onClick={() => handlePublishCandidate(candidate.id)}>
+                      <Send className="h-3 w-3 mr-1" />
+                      Publish
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -101,19 +166,19 @@ export const Dashboard = () => {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full justify-start" variant="outline">
+              <Button className="w-full justify-start" variant="outline" onClick={() => handleQuickAction("Add New Candidate")}>
                 <Users className="h-4 w-4 mr-2" />
                 Add New Candidate
               </Button>
-              <Button className="w-full justify-start" variant="outline">
+              <Button className="w-full justify-start" variant="outline" onClick={() => handleQuickAction("Post New Job")}>
                 <Briefcase className="h-4 w-4 mr-2" />
                 Post New Job
               </Button>
-              <Button className="w-full justify-start" variant="outline">
+              <Button className="w-full justify-start" variant="outline" onClick={() => handleQuickAction("Schedule Interview")}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Schedule Interview
               </Button>
-              <Button className="w-full justify-start" variant="outline">
+              <Button className="w-full justify-start" variant="outline" onClick={() => handleQuickAction("Send Message")}>
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Send Message
               </Button>

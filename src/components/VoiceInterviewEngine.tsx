@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,18 +34,29 @@ export const VoiceInterviewEngine = ({
 }: VoiceInterviewEngineProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1); // Start with -1 for intro
   const [timeRemaining, setTimeRemaining] = useState(duration * 60);
   const [questionTimeRemaining, setQuestionTimeRemaining] = useState(0);
   const [candidateAnswers, setCandidateAnswers] = useState<string[]>([]);
   const [isWaitingForCandidate, setIsWaitingForCandidate] = useState(true);
   const [waitTime, setWaitTime] = useState(300); // 5 minutes in seconds
   const [interviewStatus, setInterviewStatus] = useState<'waiting' | 'active' | 'completed' | 'disconnected'>('waiting');
+  const [isQuestionPlaying, setIsQuestionPlaying] = useState(false);
   
   const { toast } = useToast();
   const timerRef = useRef<NodeJS.Timeout>();
   const questionTimerRef = useRef<NodeJS.Timeout>();
   const waitTimerRef = useRef<NodeJS.Timeout>();
+
+  // Self-introduction question
+  const introQuestion = {
+    id: 0,
+    question: `Hello ${candidateName}, welcome to your interview for the ${position} position. Please start by introducing yourself and telling us about your previous experience in this field.`,
+    expectedPoints: ["Self introduction", "Previous experience", "Relevant background"],
+    timeLimit: 180
+  };
+
+  const allQuestions = [introQuestion, ...questions];
 
   useEffect(() => {
     // Start waiting timer for candidate to join
@@ -94,8 +104,11 @@ export const VoiceInterviewEngine = ({
       });
     }, 1000);
 
-    // Start first question
-    startQuestion();
+    // Start with introduction question
+    setCurrentQuestionIndex(0);
+    setTimeout(() => {
+      startQuestion();
+    }, 1000);
     
     toast({
       title: "Interview Started",
@@ -104,36 +117,67 @@ export const VoiceInterviewEngine = ({
   };
 
   const startQuestion = () => {
-    const question = questions[currentQuestionIndex];
-    setQuestionTimeRemaining(question.timeLimit);
-    
-    questionTimerRef.current = setInterval(() => {
-      setQuestionTimeRemaining(prev => {
-        if (prev <= 1) {
-          handleNextQuestion();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    if (currentQuestionIndex >= allQuestions.length) {
+      handleInterviewComplete();
+      return;
+    }
 
-    // Simulate speaking the question
+    const question = allQuestions[currentQuestionIndex];
+    setQuestionTimeRemaining(question.timeLimit);
+    setIsQuestionPlaying(true);
+    
+    // Clear any existing question timer
+    if (questionTimerRef.current) {
+      clearInterval(questionTimerRef.current);
+    }
+
+    // Speak the question first
     speakQuestion(question.question);
+    
+    // Start question timer after a brief delay to allow TTS to start
+    setTimeout(() => {
+      setIsQuestionPlaying(false);
+      questionTimerRef.current = setInterval(() => {
+        setQuestionTimeRemaining(prev => {
+          if (prev <= 1) {
+            handleNextQuestion();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }, 3000); // 3 second delay for TTS
   };
 
   const speakQuestion = (question: string) => {
-    // Text-to-speech simulation
+    // Text-to-speech implementation
     if ('speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      speechSynthesis.cancel();
+      
       const utterance = new SpeechSynthesisUtterance(question);
-      utterance.rate = 0.9;
+      utterance.rate = 0.8;
       utterance.pitch = 1;
+      utterance.volume = 0.8;
+      
+      utterance.onend = () => {
+        console.log('Question finished speaking');
+      };
+      
       speechSynthesis.speak(utterance);
     }
   };
 
   const handleStartRecording = () => {
+    if (isQuestionPlaying) {
+      toast({
+        title: "Please Wait",
+        description: "Please wait for the question to finish before answering.",
+      });
+      return;
+    }
+    
     setIsRecording(true);
-    // Simulate starting recording
     toast({
       title: "Recording Started",
       description: "Please answer the question clearly.",
@@ -142,8 +186,10 @@ export const VoiceInterviewEngine = ({
 
   const handleStopRecording = () => {
     setIsRecording(false);
+    
     // Simulate saving answer
-    const simulatedAnswer = `Simulated answer for question ${currentQuestionIndex + 1}`;
+    const questionType = currentQuestionIndex === 0 ? "Introduction" : `Question ${currentQuestionIndex}`;
+    const simulatedAnswer = `Simulated answer for ${questionType} by ${candidateName}`;
     setCandidateAnswers(prev => [...prev, simulatedAnswer]);
     
     toast({
@@ -157,9 +203,11 @@ export const VoiceInterviewEngine = ({
   };
 
   const handleNextQuestion = () => {
-    if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+    if (questionTimerRef.current) {
+      clearInterval(questionTimerRef.current);
+    }
     
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < allQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setTimeout(() => {
         startQuestion();
@@ -201,8 +249,8 @@ export const VoiceInterviewEngine = ({
       position,
       scores,
       overallScore,
-      recommendation: overallScore >= 75 ? 'selected' : 'rejected',
-      feedback: `Based on the interview responses, the candidate demonstrated ${overallScore >= 75 ? 'strong' : 'adequate'} skills in the assessed areas.`,
+      recommendation: overallScore >= 70 ? 'selected' : 'rejected',
+      feedback: `Based on the interview responses, the candidate demonstrated ${overallScore >= 70 ? 'strong' : 'adequate'} skills in the assessed areas.`,
       answers: candidateAnswers,
       interviewDuration: duration * 60 - timeRemaining,
     };
@@ -288,7 +336,7 @@ export const VoiceInterviewEngine = ({
     );
   }
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = allQuestions[currentQuestionIndex];
 
   return (
     <Card className="max-w-4xl mx-auto">
@@ -318,7 +366,7 @@ export const VoiceInterviewEngine = ({
           <Card>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {currentQuestionIndex + 1}/{questions.length}
+                {currentQuestionIndex + 1}/{allQuestions.length}
               </div>
               <p className="text-sm text-gray-600">Questions</p>
             </CardContent>
@@ -341,11 +389,16 @@ export const VoiceInterviewEngine = ({
               <Volume2 className="h-6 w-6 text-blue-600 mt-1" />
               <div className="flex-1">
                 <h3 className="font-semibold text-lg mb-2">
-                  Question {currentQuestionIndex + 1}
+                  {currentQuestionIndex === 0 ? "Introduction" : `Question ${currentQuestionIndex}`}
                 </h3>
                 <p className="text-gray-700 text-lg leading-relaxed">
                   {currentQuestion.question}
                 </p>
+                {isQuestionPlaying && (
+                  <p className="text-sm text-blue-600 mt-2 animate-pulse">
+                    🔊 Question is being spoken...
+                  </p>
+                )}
               </div>
             </div>
             
@@ -365,6 +418,7 @@ export const VoiceInterviewEngine = ({
             variant={isRecording ? "destructive" : "default"}
             size="lg"
             className="px-8"
+            disabled={isQuestionPlaying}
           >
             {isRecording ? (
               <>
@@ -383,6 +437,7 @@ export const VoiceInterviewEngine = ({
             onClick={handleNextQuestion}
             variant="outline"
             size="lg"
+            disabled={isQuestionPlaying}
           >
             Skip Question
           </Button>
@@ -401,7 +456,9 @@ export const VoiceInterviewEngine = ({
         {/* Interview Status */}
         <div className="text-center space-y-2">
           <p className="text-sm text-gray-600">
-            {isRecording ? "🔴 Recording in progress..." : "Press 'Start Answer' to record your response"}
+            {isQuestionPlaying ? "🔊 Question is being spoken..." : 
+             isRecording ? "🔴 Recording in progress..." : 
+             "Press 'Start Answer' to record your response"}
           </p>
           {isConnected && (
             <div className="flex items-center justify-center gap-2 text-green-600">

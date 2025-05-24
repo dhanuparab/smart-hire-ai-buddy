@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,10 +41,14 @@ export const InterviewFeedbackEngine = ({ feedback, onSendEmail, onClose }: Inte
     onSendEmail('rejection');
     setEmailsSent({ ...emailsSent, rejection: true });
     toast({
-      title: "Rejection Email Sent",
+      title: "Rejection Email Sent", 
       description: "Thank you email sent to candidate",
     });
   };
+
+  // Determine which email button to show based on score
+  const showSelectionButton = overallScore >= 70;
+  const showRejectionButton = overallScore < 70;
 
   return (
     <Card className="max-w-3xl mx-auto">
@@ -63,7 +68,7 @@ export const InterviewFeedbackEngine = ({ feedback, onSendEmail, onClose }: Inte
           </Card>
           <Card>
             <CardContent className="p-6">
-              {recommendation === 'selected' ? (
+              {overallScore >= 70 ? (
                 <div className="flex items-center text-green-600 text-xl font-semibold">
                   <CheckCircle className="h-6 w-6 mr-2" />
                   Recommended for Selection
@@ -105,9 +110,11 @@ export const InterviewFeedbackEngine = ({ feedback, onSendEmail, onClose }: Inte
           <div className="space-y-3">
             {answers.map((answer, index) => (
               <Card key={index} className="bg-gray-50">
-                <CardContent className="text-sm text-gray-700">
-                  <p className="font-semibold">Question {index + 1}:</p>
-                  <p>{answer}</p>
+                <CardContent className="p-4">
+                  <p className="font-semibold text-sm">
+                    {index === 0 ? "Introduction:" : `Question ${index}:`}
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">{answer}</p>
                 </CardContent>
               </Card>
             ))}
@@ -121,45 +128,61 @@ export const InterviewFeedbackEngine = ({ feedback, onSendEmail, onClose }: Inte
           </p>
         </div>
 
-        {/* Email Actions */}
+        {/* Email Actions - Conditional based on score */}
         <div className="flex justify-center space-x-4">
-          <Button
-            variant="outline"
-            onClick={handleSendSelectionEmail}
-            disabled={emailsSent.selection}
-          >
-            {emailsSent.selection ? (
-              <>
-                <Mail className="h-4 w-4 mr-2" />
-                Selection Email Sent
-              </>
-            ) : (
-              <>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Send Selection Email
-              </>
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleSendRejectionEmail}
-            disabled={emailsSent.rejection}
-          >
-            {emailsSent.rejection ? (
-              <>
-                <Mail className="h-4 w-4 mr-2" />
-                Rejection Email Sent
-              </>
-            ) : (
-              <>
-                <XCircle className="h-4 w-4 mr-2" />
-                Send Rejection Email
-              </>
-            )}
-          </Button>
+          {showSelectionButton && (
+            <Button
+              variant="default"
+              onClick={handleSendSelectionEmail}
+              disabled={emailsSent.selection}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {emailsSent.selection ? (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Selection Email Sent
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Send Selection Email
+                </>
+              )}
+            </Button>
+          )}
+          
+          {showRejectionButton && (
+            <Button
+              variant="destructive"
+              onClick={handleSendRejectionEmail}
+              disabled={emailsSent.rejection}
+            >
+              {emailsSent.rejection ? (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Rejection Email Sent
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Send Rejection Email
+                </>
+              )}
+            </Button>
+          )}
+          
           <Button variant="ghost" onClick={onClose}>
             Close
           </Button>
+        </div>
+        
+        {/* Score-based recommendation */}
+        <div className="text-center text-sm text-gray-500">
+          {overallScore >= 70 ? (
+            "Score is above 70% - Selection email option available"
+          ) : (
+            "Score is below 70% - Rejection email option available"
+          )}
         </div>
       </CardContent>
     </Card>

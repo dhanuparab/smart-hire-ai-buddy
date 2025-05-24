@@ -1,32 +1,20 @@
 
 import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface NewInterview {
-  candidate: string;
-  position: string;
-  interviewer: string;
-  date: string;
-  time: string;
-  duration: number;
-  type: string;
-  location: string;
-  notes: string;
-}
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar, Plus } from "lucide-react";
 
 interface ScheduleInterviewDialogProps {
-  onSchedule: (interview: NewInterview) => void;
+  onSchedule: (interview: any) => void;
 }
 
 export const ScheduleInterviewDialog = ({ onSchedule }: ScheduleInterviewDialogProps) => {
-  const [newInterview, setNewInterview] = useState<NewInterview>({
+  const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState({
     candidate: "",
     position: "",
     interviewer: "",
@@ -38,11 +26,11 @@ export const ScheduleInterviewDialog = ({ onSchedule }: ScheduleInterviewDialogP
     notes: ""
   });
 
-  const { toast } = useToast();
-
-  const handleScheduleInterview = () => {
-    onSchedule(newInterview);
-    setNewInterview({
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSchedule(formData);
+    setOpen(false);
+    setFormData({
       candidate: "",
       position: "",
       interviewer: "",
@@ -55,35 +43,45 @@ export const ScheduleInterviewDialog = ({ onSchedule }: ScheduleInterviewDialogP
     });
   };
 
+  const durationOptions = [
+    { value: 15, label: "15 minutes" },
+    { value: 30, label: "30 minutes" },
+    { value: 45, label: "45 minutes" },
+    { value: 60, label: "1 hour" }
+  ];
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
           Schedule Interview
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Schedule New Interview</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Schedule New Interview
+          </DialogTitle>
           <DialogDescription>
-            Set up a voice interview with automatic question generation
+            Create a new interview with AI voice capabilities
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="candidate">Candidate Name</Label>
               <Input
                 id="candidate"
-                value={newInterview.candidate}
-                onChange={(e) => setNewInterview({...newInterview, candidate: e.target.value})}
-                placeholder="Enter candidate name"
+                value={formData.candidate}
+                onChange={(e) => setFormData({ ...formData, candidate: e.target.value })}
+                required
               />
             </div>
             <div>
               <Label htmlFor="position">Position</Label>
-              <Select value={newInterview.position} onValueChange={(value) => setNewInterview({...newInterview, position: value})}>
+              <Select value={formData.position} onValueChange={(value) => setFormData({ ...formData, position: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select position" />
                 </SelectTrigger>
@@ -98,24 +96,58 @@ export const ScheduleInterviewDialog = ({ onSchedule }: ScheduleInterviewDialogP
             </div>
           </div>
 
+          <div>
+            <Label htmlFor="interviewer">Interviewer</Label>
+            <Input
+              id="interviewer"
+              value={formData.interviewer}
+              onChange={(e) => setFormData({ ...formData, interviewer: e.target.value })}
+              required
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="interviewer">Interviewer</Label>
-              <Select value={newInterview.interviewer} onValueChange={(value) => setNewInterview({...newInterview, interviewer: value})}>
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="time">Time</Label>
+              <Input
+                id="time"
+                type="time"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="duration">Duration</Label>
+              <Select value={formData.duration.toString()} onValueChange={(value) => setFormData({ ...formData, duration: parseInt(value) })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select interviewer" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="John Smith">John Smith</SelectItem>
-                  <SelectItem value="Emily Davis">Emily Davis</SelectItem>
-                  <SelectItem value="Alex Thompson">Alex Thompson</SelectItem>
-                  <SelectItem value="Lisa Wang">Lisa Wang</SelectItem>
+                  {durationOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value.toString()}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="type">Interview Type</Label>
-              <Select value={newInterview.type} onValueChange={(value) => setNewInterview({...newInterview, type: value})}>
+              <Label htmlFor="type">Type</Label>
+              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -128,48 +160,13 @@ export const ScheduleInterviewDialog = ({ onSchedule }: ScheduleInterviewDialogP
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={newInterview.date}
-                onChange={(e) => setNewInterview({...newInterview, date: e.target.value})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="time">Time</Label>
-              <Input
-                id="time"
-                type="time"
-                value={newInterview.time}
-                onChange={(e) => setNewInterview({...newInterview, time: e.target.value})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="duration">Duration</Label>
-              <Select value={newInterview.duration.toString()} onValueChange={(value) => setNewInterview({...newInterview, duration: parseInt(value)})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="15">15 minutes</SelectItem>
-                  <SelectItem value="30">30 minutes</SelectItem>
-                  <SelectItem value="45">45 minutes</SelectItem>
-                  <SelectItem value="60">1 hour</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           <div>
-            <Label htmlFor="location">Location/Meeting Link</Label>
+            <Label htmlFor="location">Location/Link</Label>
             <Input
               id="location"
-              value={newInterview.location}
-              onChange={(e) => setNewInterview({...newInterview, location: e.target.value})}
-              placeholder="Meeting room, phone number, or video link"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="Meeting room or video call link"
             />
           </div>
 
@@ -177,18 +174,20 @@ export const ScheduleInterviewDialog = ({ onSchedule }: ScheduleInterviewDialogP
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               id="notes"
-              value={newInterview.notes}
-              onChange={(e) => setNewInterview({...newInterview, notes: e.target.value})}
-              placeholder="Interview agenda, focus areas, or special instructions"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Additional notes about the interview"
               rows={3}
             />
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button variant="outline">Save as Draft</Button>
-            <Button onClick={handleScheduleInterview}>Schedule Interview</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">Schedule Interview</Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
