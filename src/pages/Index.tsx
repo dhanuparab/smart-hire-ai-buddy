@@ -5,17 +5,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Users, Calendar, BarChart3, Brain, Zap, Target, TrendingUp } from "lucide-react";
+import { Search, Users, Calendar, BarChart3, Brain, Zap, Target, TrendingUp, LogOut } from "lucide-react";
 import { Dashboard } from "@/components/Dashboard";
 import { CandidateManagement } from "@/components/CandidateManagement";
 import { JobPostings } from "@/components/JobPostings";
 import { AIInsights } from "@/components/AIInsights";
 import { Analytics } from "@/components/Analytics";
 import { InterviewScheduler } from "@/components/InterviewScheduler";
+import { LoginPage } from "@/components/LoginPage";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Show login page if user is not authenticated
+  if (!user) {
+    return <LoginPage />;
+  }
 
   const stats = [
     { title: "Active Candidates", value: "1,247", change: "+12%", icon: Users, color: "text-blue-600" },
@@ -53,6 +61,12 @@ const Index = () => {
                 <Zap className="h-4 w-4 mr-2" />
                 AI Assistant
               </Button>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Welcome, {user.name}</span>
+                <Button variant="ghost" size="sm" onClick={logout}>
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

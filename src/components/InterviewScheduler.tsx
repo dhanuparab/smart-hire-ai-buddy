@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, Video, Phone, MapPin, Plus, Edit, Trash2, Users, AlertCircle } from "lucide-react";
+import { Calendar, Clock, Video, Phone, MapPin, Plus, Edit, Trash2, Users, AlertCircle, Copy, Play } from "lucide-react";
+import { VoiceInterviewEngine } from "@/components/VoiceInterviewEngine";
+import { InterviewFeedbackEngine } from "@/components/InterviewFeedbackEngine";
+import { interviewQuestionBank } from "@/components/InterviewQuestionBank";
+import { useToast } from "@/hooks/use-toast";
 
 export const InterviewScheduler = () => {
   const [interviews, setInterviews] = useState([
@@ -25,7 +28,8 @@ export const InterviewScheduler = () => {
       status: "Confirmed",
       location: "Google Meet",
       notes: "Technical interview focusing on React and system design",
-      avatar: "/placeholder.svg"
+      avatar: "/placeholder.svg",
+      interviewLink: `https://airecruiter.com/interview/unique-${Date.now()}-sarah-chen`
     },
     {
       id: 2,
@@ -39,7 +43,8 @@ export const InterviewScheduler = () => {
       status: "Pending",
       location: "+1 (555) 123-4567",
       notes: "Initial screening call",
-      avatar: "/placeholder.svg"
+      avatar: "/placeholder.svg",
+      interviewLink: `https://airecruiter.com/interview/unique-${Date.now()}-marcus-johnson`
     },
     {
       id: 3,
@@ -53,7 +58,8 @@ export const InterviewScheduler = () => {
       status: "Confirmed",
       location: "Conference Room A",
       notes: "Portfolio review and design challenge",
-      avatar: "/placeholder.svg"
+      avatar: "/placeholder.svg",
+      interviewLink: `https://airecruiter.com/interview/unique-${Date.now()}-emily-rodriguez`
     },
     {
       id: 4,
@@ -67,7 +73,8 @@ export const InterviewScheduler = () => {
       status: "Rescheduled",
       location: "Zoom",
       notes: "System architecture discussion",
-      avatar: "/placeholder.svg"
+      avatar: "/placeholder.svg",
+      interviewLink: `https://airecruiter.com/interview/unique-${Date.now()}-david-park`
     }
   ]);
 
@@ -83,6 +90,10 @@ export const InterviewScheduler = () => {
     notes: ""
   });
 
+  const [activeVoiceInterview, setActiveVoiceInterview] = useState(null);
+  const [feedbackData, setFeedbackData] = useState(null);
+  const { toast } = useToast();
+
   const upcomingInterviews = interviews.filter(interview => 
     new Date(interview.date + " " + interview.time) > new Date()
   );
@@ -92,11 +103,14 @@ export const InterviewScheduler = () => {
   );
 
   const handleScheduleInterview = () => {
+    const interviewLink = `https://airecruiter.com/interview/unique-${Date.now()}-${newInterview.candidate.toLowerCase().replace(/\s+/g, '-')}`;
+    
     const interview = {
       id: interviews.length + 1,
       ...newInterview,
       status: "Pending",
-      avatar: "/placeholder.svg"
+      avatar: "/placeholder.svg",
+      interviewLink
     };
     setInterviews([...interviews, interview]);
     setNewInterview({
@@ -109,6 +123,43 @@ export const InterviewScheduler = () => {
       type: "Video Call",
       location: "",
       notes: ""
+    });
+
+    toast({
+      title: "Interview Scheduled",
+      description: `Interview link generated: ${interviewLink}`,
+    });
+  };
+
+  const handleStartVoiceInterview = (interview) => {
+    const questions = interviewQuestionBank[interview.position] || interviewQuestionBank["Frontend Developer"];
+    
+    setActiveVoiceInterview({
+      candidateId: interview.id.toString(),
+      candidateName: interview.candidate,
+      position: interview.position,
+      duration: interview.duration,
+      questions
+    });
+  };
+
+  const handleInterviewComplete = (feedback) => {
+    setFeedbackData(feedback);
+    setActiveVoiceInterview(null);
+  };
+
+  const handleSendEmail = (type) => {
+    toast({
+      title: `${type === 'selection' ? 'Selection' : 'Rejection'} Email Sent`,
+      description: "Candidate has been notified via email.",
+    });
+  };
+
+  const copyInterviewLink = (link) => {
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Link Copied",
+      description: "Interview link copied to clipboard",
     });
   };
 
@@ -130,6 +181,26 @@ export const InterviewScheduler = () => {
       default: return <Calendar className="h-4 w-4" />;
     }
   };
+
+  if (activeVoiceInterview) {
+    return (
+      <VoiceInterviewEngine
+        {...activeVoiceInterview}
+        onInterviewComplete={handleInterviewComplete}
+        onDisconnect={() => setActiveVoiceInterview(null)}
+      />
+    );
+  }
+
+  if (feedbackData) {
+    return (
+      <InterviewFeedbackEngine
+        feedback={feedbackData}
+        onSendEmail={handleSendEmail}
+        onClose={() => setFeedbackData(null)}
+      />
+    );
+  }
 
   const InterviewCard = ({ interview }: { interview: any }) => (
     <Card className="hover:shadow-md transition-all duration-200">
@@ -170,6 +241,24 @@ export const InterviewScheduler = () => {
             </div>
           </div>
 
+          {/* Interview Link */}
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-blue-800">Unique Interview Link</p>
+                <p className="text-xs text-blue-600 break-all">{interview.interviewLink}</p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => copyInterviewLink(interview.interviewLink)}
+                className="ml-2"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
           {interview.notes && (
             <div className="bg-gray-50 p-3 rounded-lg">
               <p className="text-xs text-gray-600">{interview.notes}</p>
@@ -183,7 +272,17 @@ export const InterviewScheduler = () => {
                 <Edit className="h-4 w-4" />
               </Button>
               {interview.status === "Confirmed" && (
-                <Button size="sm">Join</Button>
+                <>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleStartVoiceInterview(interview)}
+                    className="text-green-600 border-green-600 hover:bg-green-50"
+                  >
+                    <Play className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm">Join</Button>
+                </>
               )}
             </div>
           </div>
@@ -199,9 +298,9 @@ export const InterviewScheduler = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Interview Scheduler</CardTitle>
+              <CardTitle>Advanced Interview Scheduler</CardTitle>
               <CardDescription>
-                Manage and coordinate interviews with candidates and team members
+                AI-powered voice interviews with automatic feedback and email notifications
               </CardDescription>
             </div>
             <Dialog>
@@ -215,7 +314,7 @@ export const InterviewScheduler = () => {
                 <DialogHeader>
                   <DialogTitle>Schedule New Interview</DialogTitle>
                   <DialogDescription>
-                    Set up an interview with a candidate
+                    Set up a voice interview with automatic question generation
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -231,12 +330,18 @@ export const InterviewScheduler = () => {
                     </div>
                     <div>
                       <Label htmlFor="position">Position</Label>
-                      <Input
-                        id="position"
-                        value={newInterview.position}
-                        onChange={(e) => setNewInterview({...newInterview, position: e.target.value})}
-                        placeholder="Job position"
-                      />
+                      <Select value={newInterview.position} onValueChange={(value) => setNewInterview({...newInterview, position: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select position" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Frontend Developer">Frontend Developer</SelectItem>
+                          <SelectItem value="Backend Developer">Backend Developer</SelectItem>
+                          <SelectItem value="Data Scientist">Data Scientist</SelectItem>
+                          <SelectItem value="Product Manager">Product Manager</SelectItem>
+                          <SelectItem value="UX Designer">UX Designer</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
@@ -290,17 +395,16 @@ export const InterviewScheduler = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="duration">Duration (minutes)</Label>
+                      <Label htmlFor="duration">Duration</Label>
                       <Select value={newInterview.duration.toString()} onValueChange={(value) => setNewInterview({...newInterview, duration: parseInt(value)})}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="15">15 minutes</SelectItem>
                           <SelectItem value="30">30 minutes</SelectItem>
                           <SelectItem value="45">45 minutes</SelectItem>
                           <SelectItem value="60">1 hour</SelectItem>
-                          <SelectItem value="75">1 hour 15 minutes</SelectItem>
-                          <SelectItem value="90">1 hour 30 minutes</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -377,7 +481,7 @@ export const InterviewScheduler = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Video Calls</p>
+                <p className="text-sm font-medium text-gray-600">Voice Interviews</p>
                 <p className="text-2xl font-bold">{interviews.filter(i => i.type === "Video Call").length}</p>
               </div>
               <Video className="h-8 w-8 text-purple-600" />
@@ -395,7 +499,7 @@ export const InterviewScheduler = () => {
               Today's Schedule
             </CardTitle>
             <CardDescription>
-              Interviews scheduled for today
+              Interviews scheduled for today with voice interview capabilities
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -413,7 +517,7 @@ export const InterviewScheduler = () => {
         <CardHeader>
           <CardTitle>All Scheduled Interviews</CardTitle>
           <CardDescription>
-            Manage all upcoming and past interviews
+            Manage all interviews with AI-powered voice assessment
           </CardDescription>
         </CardHeader>
         <CardContent>
