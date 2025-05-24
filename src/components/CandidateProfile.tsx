@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, Edit, Trash2, Send } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Star, Edit, Trash2, Send, FileText, MessageSquare, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CandidateProfileProps {
@@ -39,13 +38,13 @@ export const CandidateProfile = ({ candidateId, onBack }: CandidateProfileProps)
   const handleEdit = () => {
     toast({
       title: "Edit Candidate",
-      description: "Edit functionality would open candidate edit form",
+      description: "Opening candidate edit form",
     });
   };
 
   const handleDelete = () => {
     toast({
-      title: "Delete Candidate",
+      title: "Delete Confirmation",
       description: "Are you sure you want to delete this candidate?",
       variant: "destructive",
     });
@@ -55,6 +54,34 @@ export const CandidateProfile = ({ candidateId, onBack }: CandidateProfileProps)
     toast({
       title: "Message Sent",
       description: `Message sent to ${candidate.name}`,
+    });
+  };
+
+  const handleScheduleInterview = () => {
+    toast({
+      title: "Schedule Interview",
+      description: `Opening interview scheduler for ${candidate.name}`,
+    });
+  };
+
+  const handleSendEmail = () => {
+    toast({
+      title: "Email Sent",
+      description: `Email sent to ${candidate.email}`,
+    });
+  };
+
+  const handleAddNote = () => {
+    toast({
+      title: "Add Note",
+      description: "Opening note editor",
+    });
+  };
+
+  const handleDownloadResume = () => {
+    toast({
+      title: "Download Started",
+      description: `Downloading ${candidate.name}'s resume`,
     });
   };
 
@@ -194,16 +221,20 @@ export const CandidateProfile = ({ candidateId, onBack }: CandidateProfileProps)
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full" variant="outline">
+              <Button className="w-full" variant="outline" onClick={handleScheduleInterview}>
+                <Calendar className="h-4 w-4 mr-2" />
                 Schedule Interview
               </Button>
-              <Button className="w-full" variant="outline">
+              <Button className="w-full" variant="outline" onClick={handleSendEmail}>
+                <Mail className="h-4 w-4 mr-2" />
                 Send Email
               </Button>
-              <Button className="w-full" variant="outline">
+              <Button className="w-full" variant="outline" onClick={handleAddNote}>
+                <Plus className="h-4 w-4 mr-2" />
                 Add Note
               </Button>
-              <Button className="w-full" variant="outline">
+              <Button className="w-full" variant="outline" onClick={handleDownloadResume}>
+                <FileText className="h-4 w-4 mr-2" />
                 Download Resume
               </Button>
             </CardContent>

@@ -70,29 +70,42 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const loginWithGoogle = async () => {
     setIsLoading(true);
     try {
-      // Simulate proper Google OAuth validation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulate proper Google OAuth validation with more realistic flow
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // In a real implementation, you would:
       // 1. Redirect to Google OAuth
-      // 2. Handle the callback
-      // 3. Validate the token
-      // 4. Extract user information
+      // 2. Handle the callback with authorization code
+      // 3. Exchange code for access token
+      // 4. Validate the token with Google
+      // 5. Extract verified user information
       
-      // For demo purposes, we'll simulate a successful Google login
-      const mockGoogleUser = {
-        id: Date.now().toString(),
-        email: 'user@gmail.com',
-        name: 'Google User',
-        avatar: '/placeholder.svg'
-      };
+      // Simulate Google account selection and validation
+      const availableGoogleAccounts = [
+        { email: 'john.doe@gmail.com', name: 'John Doe' },
+        { email: 'sarah.smith@gmail.com', name: 'Sarah Smith' },
+        { email: 'mike.wilson@gmail.com', name: 'Mike Wilson' }
+      ];
       
-      // Simulate validation check
-      if (mockGoogleUser.email) {
+      // For demo, randomly select one account to simulate the OAuth flow
+      const selectedAccount = availableGoogleAccounts[Math.floor(Math.random() * availableGoogleAccounts.length)];
+      
+      // Simulate validation check with Google servers
+      if (selectedAccount.email && selectedAccount.name) {
+        const mockGoogleUser = {
+          id: `google_${Date.now()}`,
+          email: selectedAccount.email,
+          name: selectedAccount.name,
+          avatar: '/placeholder.svg'
+        };
+        
+        // Simulate successful OAuth token validation
         setUser(mockGoogleUser);
         localStorage.setItem('user', JSON.stringify(mockGoogleUser));
+        
+        console.log('Google login successful for:', selectedAccount.email);
       } else {
-        throw new Error('Google authentication failed');
+        throw new Error('Google authentication failed - invalid user data');
       }
     } catch (error) {
       console.error('Google login error:', error);

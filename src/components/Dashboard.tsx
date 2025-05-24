@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CandidateProfile } from "@/components/CandidateProfile";
-import { Bell, Clock, Star, TrendingUp, Users, Briefcase, Calendar, MessageSquare, Eye, Edit, Trash2, Send } from "lucide-react";
+import { Bell, Clock, Star, TrendingUp, Users, Briefcase, Calendar, MessageSquare, Eye, Edit, Trash2, Send, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export const Dashboard = () => {
@@ -36,32 +35,59 @@ export const Dashboard = () => {
     setSelectedCandidate(candidateId);
   };
 
-  const handleEditCandidate = (candidateId: string) => {
+  const handleAIAssistant = () => {
     toast({
-      title: "Edit Candidate",
-      description: `Edit functionality for candidate ${candidateId}`,
+      title: "AI Assistant Activated",
+      description: "AI Assistant is now helping you with recruitment tasks",
     });
   };
 
-  const handleDeleteCandidate = (candidateId: string) => {
+  const handleJoinCall = (candidate: string) => {
     toast({
-      title: "Delete Candidate", 
-      description: `Delete functionality for candidate ${candidateId}`,
-      variant: "destructive",
+      title: "Joining Call",
+      description: `Connecting to interview with ${candidate}`,
     });
   };
 
-  const handlePublishCandidate = (candidateId: string) => {
+  const handleReschedule = (candidate: string) => {
     toast({
-      title: "Candidate Published",
-      description: `Candidate ${candidateId} has been published to job boards`,
+      title: "Reschedule Interview",
+      description: `Rescheduling interview with ${candidate}`,
     });
   };
 
-  const handleQuickAction = (action: string) => {
+  const handleAddCandidate = () => {
     toast({
-      title: `${action} Action`,
-      description: `${action} functionality triggered`,
+      title: "Add New Candidate",
+      description: "Opening candidate registration form",
+    });
+  };
+
+  const handlePostJob = () => {
+    toast({
+      title: "Post New Job",
+      description: "Opening job posting form",
+    });
+  };
+
+  const handleScheduleInterview = () => {
+    toast({
+      title: "Schedule Interview",
+      description: "Opening interview scheduling form",
+    });
+  };
+
+  const handleSendMessage = () => {
+    toast({
+      title: "Send Message",
+      description: "Opening message composer",
+    });
+  };
+
+  const handleViewResume = () => {
+    toast({
+      title: "View Resume",
+      description: "Opening resume viewer",
     });
   };
 
@@ -80,13 +106,21 @@ export const Dashboard = () => {
         {/* AI-Powered Candidate Matches */}
         <Card className="lg:col-span-2 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-blue-600" />
-              Top AI-Matched Candidates
-            </CardTitle>
-            <CardDescription>
-              Candidates ranked by AI compatibility score
-            </CardDescription>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5 text-blue-600" />
+                  Top AI-Matched Candidates
+                </CardTitle>
+                <CardDescription>
+                  Candidates ranked by AI compatibility score
+                </CardDescription>
+              </div>
+              <Button onClick={handleAIAssistant} variant="outline" size="sm">
+                <Zap className="h-4 w-4 mr-2" />
+                AI Assistant
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {recentCandidates.map((candidate, index) => (
@@ -112,24 +146,10 @@ export const Dashboard = () => {
                     <Progress value={candidate.match} className="w-20 mt-1" />
                   </div>
                   <Badge variant="outline">{candidate.status}</Badge>
-                  <div className="flex space-x-1">
-                    <Button size="sm" variant="outline" onClick={() => handleViewProfile(candidate.id)}>
-                      <Eye className="h-3 w-3 mr-1" />
-                      View
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleEditCandidate(candidate.id)}>
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleDeleteCandidate(candidate.id)}>
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Delete
-                    </Button>
-                    <Button size="sm" onClick={() => handlePublishCandidate(candidate.id)}>
-                      <Send className="h-3 w-3 mr-1" />
-                      Publish
-                    </Button>
-                  </div>
+                  <Button size="sm" variant="outline" onClick={() => handleViewProfile(candidate.id)}>
+                    <Eye className="h-3 w-3 mr-1" />
+                    View Profile
+                  </Button>
                 </div>
               </div>
             ))}
@@ -166,21 +186,25 @@ export const Dashboard = () => {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button className="w-full justify-start" variant="outline" onClick={() => handleQuickAction("Add New Candidate")}>
+              <Button className="w-full justify-start" variant="outline" onClick={handleAddCandidate}>
                 <Users className="h-4 w-4 mr-2" />
                 Add New Candidate
               </Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => handleQuickAction("Post New Job")}>
+              <Button className="w-full justify-start" variant="outline" onClick={handlePostJob}>
                 <Briefcase className="h-4 w-4 mr-2" />
                 Post New Job
               </Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => handleQuickAction("Schedule Interview")}>
+              <Button className="w-full justify-start" variant="outline" onClick={handleScheduleInterview}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Schedule Interview
               </Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => handleQuickAction("Send Message")}>
+              <Button className="w-full justify-start" variant="outline" onClick={handleSendMessage}>
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Send Message
+              </Button>
+              <Button className="w-full justify-start" variant="outline" onClick={handleViewResume}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Resume
               </Button>
             </CardContent>
           </Card>
@@ -209,8 +233,12 @@ export const Dashboard = () => {
                 <p className="text-sm text-gray-600 mb-1">{interview.role}</p>
                 <p className="text-sm font-medium text-blue-600">{interview.time}</p>
                 <div className="flex space-x-2 mt-3">
-                  <Button size="sm" variant="outline">Join Call</Button>
-                  <Button size="sm" variant="ghost">Reschedule</Button>
+                  <Button size="sm" variant="outline" onClick={() => handleJoinCall(interview.candidate)}>
+                    Join Call
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleReschedule(interview.candidate)}>
+                    Reschedule
+                  </Button>
                 </div>
               </div>
             ))}

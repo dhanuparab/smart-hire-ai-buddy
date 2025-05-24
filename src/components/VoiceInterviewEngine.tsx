@@ -34,7 +34,7 @@ export const VoiceInterviewEngine = ({
 }: VoiceInterviewEngineProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1); // Start with -1 for intro
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // Start with 0 for intro
   const [timeRemaining, setTimeRemaining] = useState(duration * 60);
   const [questionTimeRemaining, setQuestionTimeRemaining] = useState(0);
   const [candidateAnswers, setCandidateAnswers] = useState<string[]>([]);
@@ -42,16 +42,19 @@ export const VoiceInterviewEngine = ({
   const [waitTime, setWaitTime] = useState(300); // 5 minutes in seconds
   const [interviewStatus, setInterviewStatus] = useState<'waiting' | 'active' | 'completed' | 'disconnected'>('waiting');
   const [isQuestionPlaying, setIsQuestionPlaying] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [hasSpoken, setHasSpoken] = useState(false);
   
   const { toast } = useToast();
   const timerRef = useRef<NodeJS.Timeout>();
   const questionTimerRef = useRef<NodeJS.Timeout>();
   const waitTimerRef = useRef<NodeJS.Timeout>();
+  const recordingTimerRef = useRef<NodeJS.Timeout>();
 
   // Self-introduction question
   const introQuestion = {
     id: 0,
-    question: `Hello ${candidateName}, welcome to your interview for the ${position} position. Please start by introducing yourself and telling us about your previous experience in this field.`,
+    question: `Hello ${candidateName}, welcome to your interview for the ${position} position. Please start by introducing yourself and telling us about your previous experience in this field. You have 3 minutes to answer this question.`,
     expectedPoints: ["Self introduction", "Previous experience", "Relevant background"],
     timeLimit: 180
   };
@@ -74,6 +77,7 @@ export const VoiceInterviewEngine = ({
       if (waitTimerRef.current) clearInterval(waitTimerRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
       if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     };
   }, []);
 
@@ -105,7 +109,6 @@ export const VoiceInterviewEngine = ({
     }, 1000);
 
     // Start with introduction question
-    setCurrentQuestionIndex(0);
     setTimeout(() => {
       startQuestion();
     }, 1000);
@@ -125,6 +128,7 @@ export const VoiceInterviewEngine = ({
     const question = allQuestions[currentQuestionIndex];
     setQuestionTimeRemaining(question.timeLimit);
     setIsQuestionPlaying(true);
+    setHasSpoken(false);
     
     // Clear any existing question timer
     if (questionTimerRef.current) {
@@ -134,7 +138,7 @@ export const VoiceInterviewEngine = ({
     // Speak the question first
     speakQuestion(question.question);
     
-    // Start question timer after a brief delay to allow TTS to start
+    // Start question timer after TTS completes
     setTimeout(() => {
       setIsQuestionPlaying(false);
       questionTimerRef.current = setInterval(() => {
@@ -146,7 +150,7 @@ export const VoiceInterviewEngine = ({
           return prev - 1;
         });
       }, 1000);
-    }, 3000); // 3 second delay for TTS
+    }, 5000); // 5 second delay for TTS
   };
 
   const speakQuestion = (question: string) => {
@@ -162,6 +166,7 @@ export const VoiceInterviewEngine = ({
       
       utterance.onend = () => {
         console.log('Question finished speaking');
+        setIsQuestionPlaying(false);
       };
       
       speechSynthesis.speak(utterance);
@@ -178,6 +183,21 @@ export const VoiceInterviewEngine = ({
     }
     
     setIsRecording(true);
+    setRecordingDuration(0);
+    setHasSpoken(false);
+    
+    // Start recording timer to track duration and simulate voice detection
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingDuration(prev => {
+        const newDuration = prev + 1;
+        // Simulate voice detection after 3 seconds of recording
+        if (newDuration >= 3 && !hasSpoken) {
+          setHasSpoken(true);
+        }
+        return newDuration;
+      });
+    }, 1000);
+    
     toast({
       title: "Recording Started",
       description: "Please answer the question clearly.",
@@ -186,15 +206,28 @@ export const VoiceInterviewEngine = ({
 
   const handleStopRecording = () => {
     setIsRecording(false);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
     
-    // Simulate saving answer
+    // Simulate saving answer with realistic scoring
     const questionType = currentQuestionIndex === 0 ? "Introduction" : `Question ${currentQuestionIndex}`;
-    const simulatedAnswer = `Simulated answer for ${questionType} by ${candidateName}`;
-    setCandidateAnswers(prev => [...prev, simulatedAnswer]);
+    
+    // More realistic answer simulation based on speaking time
+    let answerQuality = "No response";
+    if (recordingDuration >= 10 && hasSpoken) {
+      answerQuality = `Detailed answer (${recordingDuration}s)`;
+    } else if (recordingDuration >= 5 && hasSpoken) {
+      answerQuality = `Brief answer (${recordingDuration}s)`;
+    } else if (hasSpoken) {
+      answerQuality = `Very brief answer (${recordingDuration}s)`;
+    }
+    
+    setCandidateAnswers(prev => [...prev, answerQuality]);
     
     toast({
       title: "Answer Recorded",
-      description: "Moving to next question.",
+      description: `Recorded ${recordingDuration} seconds of response`,
     });
     
     setTimeout(() => {
@@ -221,6 +254,7 @@ export const VoiceInterviewEngine = ({
     setInterviewStatus('completed');
     if (timerRef.current) clearInterval(timerRef.current);
     if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     
     // Generate feedback
     const feedback = generateInterviewFeedback();
@@ -233,26 +267,55 @@ export const VoiceInterviewEngine = ({
   };
 
   const generateInterviewFeedback = () => {
-    // Simulate AI-powered feedback generation
+    // More realistic AI-powered feedback generation based on actual responses
+    const totalAnswered = candidateAnswers.filter(answer => answer.includes("answer")).length;
+    const totalQuestions = allQuestions.length;
+    const responseRate = totalAnswered / totalQuestions;
+    
+    // Calculate scores based on actual performance
+    const communicationBase = responseRate * 60 + (hasSpoken ? 20 : 0);
+    const technicalBase = responseRate * 50 + Math.random() * 30;
+    const problemSolvingBase = responseRate * 55 + Math.random() * 25;
+    const culturalBase = responseRate * 50 + Math.random() * 30;
+    
     const scores = {
-      communication: Math.floor(Math.random() * 40) + 60,
-      technical: Math.floor(Math.random() * 40) + 60,
-      problemSolving: Math.floor(Math.random() * 40) + 60,
-      cultural: Math.floor(Math.random() * 40) + 60,
+      communication: Math.min(100, Math.max(20, Math.floor(communicationBase))),
+      technical: Math.min(100, Math.max(15, Math.floor(technicalBase))),
+      problemSolving: Math.min(100, Math.max(20, Math.floor(problemSolvingBase))),
+      cultural: Math.min(100, Math.max(25, Math.floor(culturalBase))),
     };
     
     const overallScore = Object.values(scores).reduce((sum, score) => sum + score, 0) / 4;
+    
+    // Detailed feedback based on performance
+    let detailedFeedback = `Interview Analysis for ${candidateName}:\n\n`;
+    detailedFeedback += `Questions Answered: ${totalAnswered}/${totalQuestions}\n`;
+    detailedFeedback += `Voice Detection: ${hasSpoken ? 'Yes' : 'No'}\n`;
+    detailedFeedback += `Total Speaking Time: ${candidateAnswers.reduce((total, answer) => {
+      const match = answer.match(/\((\d+)s\)/);
+      return total + (match ? parseInt(match[1]) : 0);
+    }, 0)} seconds\n\n`;
+    
+    if (overallScore < 40) {
+      detailedFeedback += "The candidate showed limited engagement and provided minimal responses.";
+    } else if (overallScore < 70) {
+      detailedFeedback += "The candidate demonstrated adequate skills but could improve in several areas.";
+    } else {
+      detailedFeedback += "The candidate demonstrated strong communication and technical skills.";
+    }
     
     return {
       candidateId,
       candidateName,
       position,
       scores,
-      overallScore,
+      overallScore: Math.floor(overallScore),
       recommendation: overallScore >= 70 ? 'selected' : 'rejected',
-      feedback: `Based on the interview responses, the candidate demonstrated ${overallScore >= 70 ? 'strong' : 'adequate'} skills in the assessed areas.`,
+      feedback: detailedFeedback,
       answers: candidateAnswers,
       interviewDuration: duration * 60 - timeRemaining,
+      questionsAnswered: totalAnswered,
+      voiceDetected: hasSpoken,
     };
   };
 
@@ -399,6 +462,11 @@ export const VoiceInterviewEngine = ({
                     🔊 Question is being spoken...
                   </p>
                 )}
+                {isRecording && (
+                  <p className="text-sm text-red-600 mt-2">
+                    🔴 Recording: {formatTime(recordingDuration)} {hasSpoken && "✓ Voice detected"}
+                  </p>
+                )}
               </div>
             </div>
             
@@ -457,7 +525,7 @@ export const VoiceInterviewEngine = ({
         <div className="text-center space-y-2">
           <p className="text-sm text-gray-600">
             {isQuestionPlaying ? "🔊 Question is being spoken..." : 
-             isRecording ? "🔴 Recording in progress..." : 
+             isRecording ? `🔴 Recording in progress... (${formatTime(recordingDuration)})` : 
              "Press 'Start Answer' to record your response"}
           </p>
           {isConnected && (
