@@ -1,256 +1,167 @@
-
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { CheckCircle, XCircle, Mail, FileText, Star, TrendingUp, TrendingDown } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
-interface FeedbackData {
-  candidateId: string;
-  candidateName: string;
-  position: string;
-  scores: {
-    communication: number;
-    technical: number;
-    problemSolving: number;
-    cultural: number;
-  };
-  overallScore: number;
-  recommendation: 'selected' | 'rejected';
-  feedback: string;
-  answers: string[];
-  interviewDuration: number;
-}
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { CheckCircle, XCircle, Mail } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface InterviewFeedbackEngineProps {
-  feedback: FeedbackData;
-  onSendEmail: (type: 'selection' | 'rejection') => void;
+  feedback: any;
+  onSendEmail: (type: string) => void;
   onClose: () => void;
 }
 
 export const InterviewFeedbackEngine = ({ feedback, onSendEmail, onClose }: InterviewFeedbackEngineProps) => {
-  const [emailSent, setEmailSent] = useState(false);
+  const [emailsSent, setEmailsSent] = useState({
+    selection: false,
+    rejection: false,
+  });
+
+  const { candidateName, position, scores, overallScore, recommendation, feedback: aiFeedback, answers, interviewDuration } = feedback;
   const { toast } = useToast();
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getScoreIcon = (score: number) => {
-    if (score >= 80) return <TrendingUp className="h-4 w-4" />;
-    if (score >= 60) return <Star className="h-4 w-4" />;
-    return <TrendingDown className="h-4 w-4" />;
-  };
-
-  const handleSendEmail = async (type: 'selection' | 'rejection') => {
-    // Simulate email sending
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setEmailSent(true);
-    onSendEmail(type);
-    
+  const handleSendSelectionEmail = () => {
+    onSendEmail('selection');
+    setEmailsSent({ ...emailsSent, selection: true });
     toast({
-      title: `${type === 'selection' ? 'Selection' : 'Rejection'} Email Sent`,
-      description: `Email has been sent to ${feedback.candidateName} with interview feedback.`,
+      title: "Selection Email Sent",
+      description: "Congratulations email sent to candidate",
     });
   };
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}m ${secs}s`;
-  };
-
-  const detailedFeedback = {
-    selected: `Dear ${feedback.candidateName},
-
-Congratulations! We are pleased to inform you that you have been selected for the ${feedback.position} position.
-
-Your interview performance was excellent, with particularly strong scores in:
-${Object.entries(feedback.scores)
-  .filter(([_, score]) => score >= 75)
-  .map(([skill, score]) => `• ${skill.charAt(0).toUpperCase() + skill.slice(1)}: ${score}%`)
-  .join('\n')}
-
-We were impressed by your technical knowledge and communication skills. Our team believes you would be a great fit for our organization.
-
-Next Steps:
-• HR will contact you within 2 business days
-• We'll discuss compensation and start date
-• Background check and reference verification
-
-We look forward to welcoming you to our team!
-
-Best regards,
-AI Recruiter Pro Team`,
-
-    rejected: `Dear ${feedback.candidateName},
-
-Thank you for taking the time to interview for the ${feedback.position} position. We appreciate your interest in our company.
-
-After careful consideration, we have decided to move forward with other candidates whose experience more closely matches our current needs.
-
-Interview Feedback:
-${Object.entries(feedback.scores)
-  .map(([skill, score]) => `• ${skill.charAt(0).toUpperCase() + skill.slice(1)}: ${score}%`)
-  .join('\n')}
-
-Areas for improvement:
-${Object.entries(feedback.scores)
-  .filter(([_, score]) => score < 70)
-  .map(([skill]) => `• Consider strengthening your ${skill} skills`)
-  .join('\n') || '• Continue developing your overall technical expertise'}
-
-We encourage you to apply for future positions that may be a better match for your background.
-
-Best of luck in your job search!
-
-Best regards,
-AI Recruiter Pro Team`
+  const handleSendRejectionEmail = () => {
+    onSendEmail('rejection');
+    setEmailsSent({ ...emailsSent, rejection: true });
+    toast({
+      title: "Rejection Email Sent",
+      description: "Thank you email sent to candidate",
+    });
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                {feedback.recommendation === 'selected' ? (
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                ) : (
-                  <XCircle className="h-6 w-6 text-red-600" />
-                )}
-                Interview Feedback - {feedback.candidateName}
-              </CardTitle>
-              <CardDescription>{feedback.position}</CardDescription>
-            </div>
-            <Badge 
-              variant={feedback.recommendation === 'selected' ? 'default' : 'destructive'}
-              className="text-lg px-4 py-2"
-            >
-              {feedback.recommendation === 'selected' ? 'SELECTED' : 'REJECTED'}
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Overall Score */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Overall Performance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-medium">Overall Score</span>
-            <span className={`text-3xl font-bold ${getScoreColor(feedback.overallScore)}`}>
-              {feedback.overallScore.toFixed(1)}%
-            </span>
-          </div>
-          <Progress value={feedback.overallScore} className="h-3" />
-          <div className="mt-4 text-sm text-gray-600">
-            Interview Duration: {formatDuration(feedback.interviewDuration)}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Detailed Scores */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Skill Assessment</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {Object.entries(feedback.scores).map(([skill, score]) => (
-              <div key={skill} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {getScoreIcon(score)}
-                    <span className="font-medium capitalize">{skill}</span>
-                  </div>
-                  <span className={`text-xl font-bold ${getScoreColor(score)}`}>
-                    {score}%
-                  </span>
+    <Card className="max-w-3xl mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-lg font-semibold">Interview Feedback - {candidateName}</CardTitle>
+        <CardDescription>AI-Generated Feedback for {position} Role</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Overall Score and Recommendation */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-3xl font-bold text-blue-600">{overallScore.toFixed(1)}</div>
+              <p className="text-sm text-gray-500">Overall Score</p>
+              <Progress value={overallScore} max={100} className="mt-2" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              {recommendation === 'selected' ? (
+                <div className="flex items-center text-green-600 text-xl font-semibold">
+                  <CheckCircle className="h-6 w-6 mr-2" />
+                  Recommended for Selection
                 </div>
-                <Progress value={score} className="h-2" />
-              </div>
+              ) : (
+                <div className="flex items-center text-red-600 text-xl font-semibold">
+                  <XCircle className="h-6 w-6 mr-2" />
+                  Not Recommended
+                </div>
+              )}
+              <p className="text-sm text-gray-500 mt-2">{aiFeedback}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Detailed Scores */}
+        <div className="space-y-2">
+          <h4 className="text-md font-semibold">Detailed Scores</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(scores).map(([key, value]: [string, any]) => (
+              <Card key={key}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">{key.charAt(0).toUpperCase() + key.slice(1)}</p>
+                      <p className="text-2xl font-bold">{value}</p>
+                    </div>
+                    <Badge variant="secondary">{value}%</Badge>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* AI Feedback */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            AI-Generated Feedback
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-gray-700 leading-relaxed">{feedback.feedback}</p>
+        {/* Interview Answers */}
+        <div className="space-y-2">
+          <h4 className="text-md font-semibold">Interview Answers</h4>
+          <div className="space-y-3">
+            {answers.map((answer, index) => (
+              <Card key={index} className="bg-gray-50">
+                <CardContent className="text-sm text-gray-700">
+                  <p className="font-semibold">Question {index + 1}:</p>
+                  <p>{answer}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Email Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Email Template Preview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-white border rounded-lg p-6 max-h-96 overflow-y-auto">
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
-              {detailedFeedback[feedback.recommendation]}
-            </pre>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Interview Duration */}
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Interview Duration: {formatTime(interviewDuration)}
+          </p>
+        </div>
 
-      {/* Actions */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex justify-center space-x-4">
-            {!emailSent ? (
+        {/* Email Actions */}
+        <div className="flex justify-center space-x-4">
+          <Button
+            variant="outline"
+            onClick={handleSendSelectionEmail}
+            disabled={emailsSent.selection}
+          >
+            {emailsSent.selection ? (
               <>
-                <Button
-                  onClick={() => handleSendEmail(feedback.recommendation)}
-                  className={`px-8 ${
-                    feedback.recommendation === 'selected' 
-                      ? 'bg-green-600 hover:bg-green-700' 
-                      : 'bg-red-600 hover:bg-red-700'
-                  }`}
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send {feedback.recommendation === 'selected' ? 'Selection' : 'Rejection'} Email
-                </Button>
-                <Button variant="outline" onClick={onClose}>
-                  Save Draft
-                </Button>
+                <Mail className="h-4 w-4 mr-2" />
+                Selection Email Sent
               </>
             ) : (
-              <div className="text-center space-y-4">
-                <div className="flex items-center justify-center gap-2 text-green-600">
-                  <CheckCircle className="h-5 w-5" />
-                  <span>Email sent successfully!</span>
-                </div>
-                <Button onClick={onClose}>
-                  Return to Dashboard
-                </Button>
-              </div>
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Send Selection Email
+              </>
             )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleSendRejectionEmail}
+            disabled={emailsSent.rejection}
+          >
+            {emailsSent.rejection ? (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Rejection Email Sent
+              </>
+            ) : (
+              <>
+                <XCircle className="h-4 w-4 mr-2" />
+                Send Rejection Email
+              </>
+            )}
+          </Button>
+          <Button variant="ghost" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
